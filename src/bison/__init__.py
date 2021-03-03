@@ -368,6 +368,11 @@ class BisonParser(object):
             fileobj = None
 
         read = kw.get('read', self.read)
+        debug = kw.get('debug', None)
+        if debug is None:
+            # debug kw not set, get global setting
+            #  this way, debug can explicitly marked as False during call
+            debug = self.debug
 
         # back up existing attributes
         oldfile = self.file
