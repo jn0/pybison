@@ -273,6 +273,6 @@ if __name__ == '__main__':
                         help="Enable garrulous debug messages from parser engine")
     args = parser.parse_args()
 
-    p = Parser(keepfiles=args.keepfiles, verbose=args.verbose)
+    p = Parser(keepfiles=args.keepfiles, verbose=args.verbose, debug=args.debug)
     print("Scientific calculator example. Type 'help' for help")
     p.run(debug=args.debug)

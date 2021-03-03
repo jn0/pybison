@@ -1853,7 +1853,7 @@ def main():
     if isinstance(args.filename, list) and len(args.filename) == 0:
         args.filename = None
 
-    p = Parser(verbose=args.verbose, keepfiles=args.keepfiles)
+    p = Parser(verbose=args.verbose, keepfiles=args.keepfiles, debug=args.debug)
     forrest = []
     if args.filename is None:
         print("(Reading from standard input - please type stuff)")

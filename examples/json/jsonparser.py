@@ -1,8 +1,11 @@
-from __future__ import print_function
-from bison import BisonParser
+import logging
 import time
 import os
 import json
+
+from bison import BisonParser
+
+LOGGER = logging.getLogger(__name__)
 
 
 class Parser(BisonParser):
@@ -165,24 +168,39 @@ class JSONParser(Parser):
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(prog="PyBison Parser Template")
+    parser.add_argument("-k", "--keepfiles", action="store_true",
+                        help="Keep temporary files used in building parse engine lib")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Enable verbose messages while parser is running")
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="Enable garrulous debug messages from parser engine")
+    parser.add_argument("filename", type=str, nargs="*", default="example.json",
+                        help="path of a file to parse, defaults to stdin")
+    args = parser.parse_args()
 
     start = time.time()
-    j = JSONParser(verbose=True, debugSymbols=False)
+    p = Parser(verbose=args.verbose, keepfiles=args.keepfiles, debug=args.debug)
     duration = time.time() - start
-    print('instantiate parser', duration)
+    LOGGER.info('instantiate parser {}s'.format(duration))
 
-    file = 'example.json'
-
-    start = time.time()
-    with open(file) as fh:
-        result_json = json.load(fh)
-    duration = time.time() - start
-    print('json {}'.format(duration))
-
-    start = time.time()
-    result_bison = j.run(file=file, debug=0)
-    duration = time.time() - start
-    print('bison-based JSONParser {}'.format(duration))
-    print('result equal to json: {}'.format(result_json == result_bison))
-
-    print('filesize: {} kB'.format(os.stat(file).st_size / 1024))
+    if args.filename is None:
+        print("(Reading from standard input - please type stuff)")
+        start = time.time()
+        tree = p.run(file=None, debug=args.debug)
+        duration = time.time() - start
+        LOGGER.info('bison-based JSONParser {}'.format(duration))
+    else:
+        for fp in args.filename:
+            start = time.time()
+            with open(args.filename) as fh:
+                result_json = json.load(fh)
+            duration = time.time() - start
+            LOGGER.info('json {}'.format(duration))
+            start = time.time()
+            result_bison = p.run(file=fp, debug=args.debug)
+            duration = time.time() - start
+            LOGGER.info('bison-based JSONParser {}'.format(duration))
+            LOGGER.info('result equal to json: {}'.format(result_json == result_bison))
+            LOGGER.info('filesize: {} kB'.format(os.stat(args.filename).st_size / 1024))
