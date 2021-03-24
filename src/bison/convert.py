@@ -26,9 +26,6 @@ from six.moves import filter
 from six.moves import map
 
 
-reSpaces = re.compile('\\s+')
-
-
 class Error(Exception): pass # use specific error
 
 
@@ -77,65 +74,49 @@ def bisonToPython(bisonfileName, lexfileName, pyfileName, generateClasses=0):
     # --------------------------------------
     # process prologue
 
+    assert '%}' in prologue, prologue
     prologue = prologue.split('%}')[-1].strip() # ditch the C code
-    prologue = re.sub('\\n([\t ]+)', ' ', prologue) # join broken lines
+    prologueLines = list(filter(None, map(str.strip(), prologue.splitlines())))
+    prologue = '\n'.join(prologueLines) # normalized text
 
-    #prologueLines = [line.strip() for line in prologue.split('\n')]
-    lines = prologue.split('\n')
-    tmp = []
-
-    for line in lines:
-        tmp.append(line.strip())
-
-    prologueLines = tmp
-
-    prologueLines = filter(None, prologueLines)
     tokens = []
     precRules = []
 
     for line in prologueLines:
-        words = reSpaces.split(line)
-        kwd = words[0]
-        args = words[1:]
+        words = line.split()
+        kwd = words.pop(0)
 
         if kwd == '%token':
-            tokens.extend(args)
+            tokens.extend(words)
         elif kwd in ['%left', '%right', '%nonassoc']:
-            precRules.append((kwd, args))
+            precRules.append((kwd, words))
         elif kwd == '%start':
-            startTarget = args[0]
+            startTarget = words[0]
 
     # -------------------------------------------------------------
     # process rules
-    rulesRaw = re.sub('\\n([\t ]+)', ' ', rulesRaw) # join broken lines
-    rulesLines = filter(lambda s: s != '', map(str.strip, re.split(unquoted % ';', rulesRaw)))
+    rulesRaw = ' '.join(map(str.strip, rulesRaw.splitlines())) # join broken lines
 
     rules = []
-    for rule in rulesLines:
+    for rule in re.split(unquoted % ';', rulesRaw):
+        rule = rule.strip()
+        if not rule:
+            continue
         #print ('--')
         #print (repr(rule))
 
-        #tgt, terms = rule.split(':')
         try:
             tgt, terms = re.split(unquoted % ':', rule)
         except ValueError:
             print ('Error in rule: %s' % rule)
-            raise
+            raise Error('Error in rule: %s' % rule)
 
         tgt, terms = tgt.strip(), terms.strip()
 
-        #terms = [t.strip() for t in terms.split('|')]
-        #terms = [reSpaces.split(t) for t in terms]
+        terms = map(str.split,
+                    map(str.strip, re.split(unquoted % r'\|', terms)))
 
-        tmp = []
-        #for t in terms.split('|'):
-        for t in re.split(unquoted % r'\|', terms):
-
-            t = t.strip()
-            tmp.append(reSpaces.split(t))
-        terms = tmp
-
-        rules.append((tgt, terms))
+        rules.append((tgt, list(terms))) # cast from iter in py3
 
     # now we have our rulebase, we can churn out our skeleton Python file
     pyfile.write('\n'.join([
