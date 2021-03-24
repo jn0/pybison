@@ -21,12 +21,31 @@ from __future__ import print_function
 import re
 import os
 
-from .bison_ import unquoted
 from six.moves import filter
 from six.moves import map
 
 
 class Error(Exception): pass # use specific error
+
+
+def split_unquoted(delim, text, func=None):
+    '''
+        Don't get quoted things like ";'
+    '''
+    func = func or (lambda x: x)
+    l = text.split(delim)
+    r = []
+    i = 0
+    while i < len(l) - 1:
+        if l[i] and l[i][-1] in ('"', "'") and l[i+1] and l[i+1][0] == l[i][-1]:
+            r.append(func(l[i] + delim + l[i+1])) # quoted!
+            i += 2
+        else:
+            r.append(func(l[i]))
+            i += 1
+    if i < len(l):
+        r.append(func(l[i]))
+    return r
 
 
 def bisonToPython(bisonfileName, lexfileName, pyfileName, generateClasses=0):
@@ -98,23 +117,19 @@ def bisonToPython(bisonfileName, lexfileName, pyfileName, generateClasses=0):
     rulesRaw = ' '.join(map(str.strip, rulesRaw.splitlines())) # join broken lines
 
     rules = []
-    for rule in re.split(unquoted % ';', rulesRaw):
-        rule = rule.strip()
+    for rule in split_unquoted(';', rulesRaw, str.strip):
         if not rule:
             continue
         #print ('--')
         #print (repr(rule))
 
         try:
-            tgt, terms = re.split(unquoted % ':', rule)
+            tgt, terms = split_unquoted(':', rule, str.strip)
         except ValueError:
             print ('Error in rule: %s' % rule)
             raise Error('Error in rule: %s' % rule)
 
-        tgt, terms = tgt.strip(), terms.strip()
-
-        terms = map(str.split,
-                    map(str.strip, re.split(unquoted % r'\|', terms)))
+        terms = map(str.split, split_unquoted('|', terms, str.strip))
 
         rules.append((tgt, list(terms))) # cast from iter in py3
 
