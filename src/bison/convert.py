@@ -29,6 +29,9 @@ from six.moves import map
 reSpaces = re.compile('\\s+')
 
 
+class Error(Exception): pass # use specific error
+
+
 def bisonToPython(bisonfileName, lexfileName, pyfileName, generateClasses=0):
     """
     Rips the rules, tokens and precedences from a bison file, and the verbatim
@@ -48,25 +51,25 @@ def bisonToPython(bisonfileName, lexfileName, pyfileName, generateClasses=0):
     try:
         pyfile = open(pyfileName, 'w')
     except:
-        raise Exception('Cannot create output file "%s"' % pyfileName)
+        raise Error('Cannot create output file "%s"' % pyfileName)
 
     # try to open/read the bison file
     try:
         rawBison = open(bisonfileName).read()
     except:
-        raise Exception('Cannot open bison file "%s"' % bisonfileName)
+        raise Error('Cannot open bison file "%s"' % bisonfileName)
 
     # try to open/read the lex file
     try:
         rawLex = open(lexfileName).read()
     except:
-        raise Exception('Cannot open lex file %s' % lexfileName)
+        raise Error('Cannot open lex file %s' % lexfileName)
 
     # break up into the three '%%'-separated sections
     try:
         prologue, rulesRaw, epilogue = rawBison.split('\n%%\n')
     except:
-        raise Exception(
+        raise Error(
             'File %s is not a properly formatted bison file'
             ' (needs 3 sections separated by %%%%' % (bisonfileName)
             )
@@ -382,3 +385,4 @@ def bisonToPython(bisonfileName, lexfileName, pyfileName, generateClasses=0):
         '',
         '',
         ]))
+# vim:set ft=python ai et ts=4 sts=4 sw=4 cc=80:EOF #
