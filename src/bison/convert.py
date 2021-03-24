@@ -21,9 +21,11 @@ from __future__ import print_function
 import re
 import os
 
-from six.moves import filter
 from six.moves import map
 
+
+str_split = str.split
+str_strip = str.strip
 
 class Error(Exception): pass # use specific error
 
@@ -95,43 +97,43 @@ def bisonToPython(bisonfileName, lexfileName, pyfileName, generateClasses=0):
 
     assert '%}' in prologue, prologue
     prologue = prologue.split('%}')[-1].strip() # ditch the C code
-    prologueLines = list(filter(None, map(str.strip(), prologue.splitlines())))
-    prologue = '\n'.join(prologueLines) # normalized text
 
     tokens = []
     precRules = []
 
-    for line in prologueLines:
+    for line in prologue.splitlines():
         words = line.split()
+        if not words:
+            continue
         kwd = words.pop(0)
 
         if kwd == '%token':
             tokens.extend(words)
-        elif kwd in ['%left', '%right', '%nonassoc']:
+        elif kwd in ('%left', '%right', '%nonassoc'):
             precRules.append((kwd, words))
         elif kwd == '%start':
             startTarget = words[0]
 
     # -------------------------------------------------------------
     # process rules
-    rulesRaw = ' '.join(map(str.strip, rulesRaw.splitlines())) # join broken lines
+    rulesRaw = ' '.join(map(str_strip, rulesRaw.splitlines())) # join broken lines
 
     rules = []
-    for rule in split_unquoted(';', rulesRaw, str.strip):
+    for rule in split_unquoted(';', rulesRaw, str_strip):
         if not rule:
             continue
         #print ('--')
         #print (repr(rule))
 
         try:
-            tgt, terms = split_unquoted(':', rule, str.strip)
+            tgt, terms = split_unquoted(':', rule, str_strip)
         except ValueError:
             print ('Error in rule: %s' % rule)
             raise Error('Error in rule: %s' % rule)
 
-        terms = map(str.split, split_unquoted('|', terms, str.strip))
+        terms = map(str_split, split_unquoted('|', terms, str_strip))
 
-        rules.append((tgt, list(terms))) # cast from iter in py3
+        rules.append((tgt, list(terms))) # cast from generator in py3
 
     # now we have our rulebase, we can churn out our skeleton Python file
     pyfile.write('\n'.join([
